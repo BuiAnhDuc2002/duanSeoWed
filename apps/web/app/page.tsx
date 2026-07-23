@@ -1,104 +1,15 @@
 "use client";
+import { FormEvent, useEffect, useState } from "react";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
-
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-const identityHeaders = {
-  "X-User-Id": "00000000-0000-0000-0000-000000000001",
-  "X-Organization-Id": "10000000-0000-0000-0000-000000000001",
+type ModuleId = "overview"|"keywords"|"planner"|"writer"|"reviews"|"media"|"integrations"|"analytics"|"settings";
+const modules: {id:ModuleId;label:string;sub:string;icon:string}[] = [
+ {id:"overview",label:"Tổng quan",sub:"Vận hành hôm nay",icon:"▦"},{id:"keywords",label:"Từ khóa",sub:"Nghiên cứu & phân cụm",icon:"⌕"},{id:"planner",label:"Kế hoạch nội dung",sub:"Lịch & topic cluster",icon:"□"},{id:"writer",label:"AI Writer",sub:"Brief & bản nháp",icon:"✦"},{id:"reviews",label:"Kiểm duyệt",sub:"Y khoa & tuân thủ",icon:"✓"},{id:"media",label:"Thư viện media",sub:"Ảnh, video & consent",icon:"▧"},{id:"integrations",label:"Tích hợp",sub:"WordPress & dữ liệu",icon:"⌘"},{id:"analytics",label:"Phân tích",sub:"Hiệu suất SEO",icon:"↗"},{id:"settings",label:"Cài đặt",sub:"Tổ chức & phân quyền",icon:"⚙"}
+];
+const copy: Record<Exclude<ModuleId,"overview">,[string,string,string]> = {
+ keywords:["SEO DISCOVERY","Tìm cơ hội tìm kiếm có giá trị","Nhập CSV, chuẩn hóa từ khóa, phân loại ý định và gom nhóm theo dịch vụ."],planner:["CONTENT PLANNING","Biến cụm từ khóa thành kế hoạch","Sắp xếp pillar page, bài hỗ trợ, người phụ trách và lịch duyệt trong một luồng."],writer:["AI WORKSPACE","Viết bản nháp từ nguồn đã duyệt","Tạo brief, outline và bản nháp có citation; mọi claim y khoa đều được theo dõi."],reviews:["SAFETY & APPROVAL","Duyệt nội dung trước khi xuất bản","Theo dõi finding SEO, claim y khoa, cảnh báo tuân thủ và quyết định reviewer."],media:["MEDIA & CONSENT","Quản lý media có kiểm soát quyền","Ảnh, video và âm thanh lưu trên R2; ảnh khách hàng cần consent hợp lệ."],integrations:["CONNECTED WORKFLOW","Kết nối kênh xuất bản và dữ liệu","WordPress chỉ nhận bản nháp. Search Console được đồng bộ có kiểm soát."],analytics:["SEO FEEDBACK LOOP","Đo hiệu suất và phát hiện suy giảm","Theo dõi click, impression, CTR và vị trí để ưu tiên nội dung cần cập nhật."],settings:["ORGANIZATION CONTROL","Quản trị tổ chức và quyền truy cập","Quản lý cơ sở, thành viên, vai trò, bảo mật và nhật ký hệ thống."]
 };
-
-type Clinic = {
-  id: string;
-  legal_name: string;
-  brand_name: string;
-  address: string;
-  verification_status: string;
-};
-
-export default function Home() {
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  const loadClinics = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API}/api/v1/clinics`, { headers: identityHeaders });
-      if (!response.ok) throw new Error("Không thể tải danh sách cơ sở.");
-      setClinics(await response.json());
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Đã có lỗi xảy ra.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => void loadClinics(), [loadClinics]);
-
-  async function createClinic(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await fetch(`${API}/api/v1/clinics`, {
-      method: "POST",
-      headers: { ...identityHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        legal_name: form.get("legal_name"),
-        brand_name: form.get("brand_name"),
-        address: form.get("address"),
-      }),
-    });
-    if (!response.ok) {
-      setError("Không thể tạo cơ sở. Hãy kiểm tra dữ liệu và quyền truy cập.");
-      return;
-    }
-    event.currentTarget.reset();
-    await loadClinics();
-  }
-
-  return (
-    <main>
-      <header>
-        <div>
-          <p className="eyebrow">FOUNDATION / CLINIC OPERATIONS</p>
-          <h1>AI SEO Clinic</h1>
-          <p className="lede">Nền tảng nội dung thẩm mỹ có truy vết, kiểm duyệt và kiểm soát rủi ro.</p>
-        </div>
-        <span className="status">Development identity</span>
-      </header>
-
-      <section className="grid">
-        <article className="panel">
-          <p className="kicker">Tạo cơ sở</p>
-          <h2>Hồ sơ pháp lý bắt đầu từ đây</h2>
-          <form onSubmit={createClinic}>
-            <label>Tên pháp lý<input name="legal_name" required minLength={2} /></label>
-            <label>Tên thương hiệu<input name="brand_name" required minLength={2} /></label>
-            <label>Địa chỉ<textarea name="address" required minLength={3} /></label>
-            <button type="submit">Tạo hồ sơ cơ sở</button>
-          </form>
-        </article>
-
-        <article className="panel">
-          <div className="sectionTitle">
-            <div><p className="kicker">Cơ sở hiện có</p><h2>{clinics.length} hồ sơ</h2></div>
-            <button className="secondary" onClick={loadClinics}>Làm mới</button>
-          </div>
-          {error && <p className="error" role="alert">{error}</p>}
-          {loading ? <p className="muted">Đang tải…</p> : clinics.length === 0 ? (
-            <div className="empty"><strong>Chưa có cơ sở</strong><p>Tạo hồ sơ đầu tiên để thêm giấy phép và dịch vụ.</p></div>
-          ) : (
-            <div className="clinicList">{clinics.map((clinic) => (
-              <div className="clinic" key={clinic.id}>
-                <div><strong>{clinic.brand_name}</strong><p>{clinic.legal_name}</p><small>{clinic.address}</small></div>
-                <span>{clinic.verification_status}</span>
-              </div>
-            ))}</div>
-          )}
-        </article>
-      </section>
-    </main>
-  );
-}
-
+function Login({done}:{done:(e:string)=>void}){const[err,setErr]=useState("");function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget),mail=String(f.get("email")||""),pass=String(f.get("password")||"");if(!mail.includes("@")||pass.length<6){setErr("Vui lòng nhập email hợp lệ và mật khẩu tối thiểu 6 ký tự.");return}done(mail)}return <main className="login"><section className="story"><b className="brand"><i>A</i> AI SEO Clinic</b><div><em>NỀN TẢNG VẬN HÀNH SEO Y KHOA</em><h1>Nội dung tăng trưởng.<br/>Niềm tin được bảo vệ.</h1><p>Từ ý tưởng từ khóa đến bản nháp WordPress — với nguồn, kiểm duyệt y khoa và consent trong từng bước.</p><ul><li>✓ Claim có nguồn và người duyệt</li><li>✓ Media riêng tư trên Cloudflare R2</li><li>✓ WordPress luôn ở trạng thái bản nháp</li></ul></div><small>AI hỗ trợ quy trình. Quyết định chuyên môn luôn thuộc về con người.</small></section><section className="signin"><form onSubmit={submit}><em>CHÀO MỪNG TRỞ LẠI</em><h2>Đăng nhập hệ thống</h2><p>Truy cập không gian làm việc của phòng khám.</p><label>Email công việc<input name="email" type="email" defaultValue="admin@aiseoclinic.vn"/></label><label>Mật khẩu<input name="password" type="password" defaultValue="Demo@123"/></label><div className="meta"><span>☑ Ghi nhớ đăng nhập</span><button type="button">Quên mật khẩu?</button></div>{err&&<aside>{err}</aside>}<button className="primary">Đăng nhập →</button><small>🔒 Bản MVP đang dùng danh tính nội bộ để kiểm thử luồng.</small></form></section></main>}
+function Overview({go}:{go:(m:ModuleId)=>void}){return <><header className="welcome"><div><em>THỨ NĂM, 23 THÁNG 7</em><h1>Chào buổi chiều, Đức.</h1><p>Đây là những việc cần chú ý trong không gian SEO của bạn.</p></div><button className="primary" onClick={()=>go("writer")}>✦ Tạo nội dung</button></header><section className="stats">{[["22","Nội dung đang chạy","8 bài cần hành động"],["05","Chờ kiểm duyệt","3 việc ưu tiên"],["84/100","Điểm SEO trung bình","+4.2 trong 30 ngày"],["2/4","Trạng thái hệ thống","Supabase & Vercel ổn định"]].map((x,i)=><article className={i===3?"dark":""} key={x[1]}><span>{x[1]}</span><strong>{x[0]}</strong><small>{x[2]}</small><i/></article>)}</section><section className="boards"><article><em>CONTENT PIPELINE</em><h2>Tiến độ nội dung</h2><div className="pipeline"><div className="donut"><b>22</b><small>Tổng bài</small></div><ul><li><i/>Ý tưởng <b>12</b></li><li><i/>Đang viết <b>5</b></li><li><i/>Chờ duyệt <b>3</b></li><li><i/>Sẵn sàng <b>2</b></li></ul></div><button onClick={()=>go("planner")}>Mở kế hoạch →</button></article><article><em>CẦN XỬ LÝ</em><h2>Việc ưu tiên</h2>{["Duyệt brief Nâng mũi cấu trúc","Xử lý 3 claim chưa có nguồn","Kiểm tra kết nối WordPress"].map((t,i)=><button className="task" key={t} onClick={()=>go(i===2?"integrations":"reviews")}><i/> <span><b>{t}</b><small>{i===2?"Tích hợp · Chưa cấu hình":"Y khoa · Hạn hôm nay"}</small></span>›</button>)}</article><article className="wide"><em>CƠ HỘI TỪ KHÓA</em><h2>Ưu tiên tiếp theo</h2>{[["nâng mũi cấu trúc","Dịch vụ","92"],["nâng mũi bao lâu thì lành","Phục hồi","88"],["cắt mí có để lại sẹo không","Rủi ro","83"]].map(r=><button className="row" key={r[0]} onClick={()=>go("keywords")}><b>{r[0]}</b><span>{r[1]}</span><strong>{r[2]}</strong></button>)}</article></section></>}
+function Module({id}:{id:Exclude<ModuleId,"overview">}){const c=copy[id],m=modules.find(x=>x.id===id)!;return <section className="module"><header><div><em>{c[0]}</em><h1>{c[1]}</h1><p>{c[2]}</p></div><button className="primary">{m.icon} Tạo mới</button></header><div className="moduleStats"><article><b>12</b><span>Đang hoạt động</span></article><article><b>05</b><span>Cần xử lý</span></article><article><b>84%</b><span>Hoàn thành</span></article></div><article className="workspace"><i>{m.icon}</i><em>MODULE WORKSPACE</em><h2>Không gian {m.label.toLowerCase()}</h2><p>Khung module đã sẵn sàng. API nghiệp vụ và workflow chi tiết sẽ được nối theo từng vertical slice của đặc tả MVP.</p><div><span>✓ Giao diện & điều hướng</span><span>2 API tenant-scoped</span><span>3 Workflow & kiểm thử quyền</span></div></article></section>}
+function App({email,out}:{email:string;out:()=>void}){const[active,setActive]=useState<ModuleId>("overview"),[open,setOpen]=useState(false),cur=modules.find(x=>x.id===active)!;return <main className="shell"><aside className={open?"open":""}><b className="brand"><i>A</i> AI SEO Clinic</b><div className="org"><i>TP</i><span><b>Thẩm mỹ Tạ Phương</b><small>Không gian chính</small></span></div><nav>{modules.map(m=><button className={active===m.id?"active":""} key={m.id} onClick={()=>{setActive(m.id);setOpen(false)}}><i>{m.icon}</i><span><b>{m.label}</b><small>{m.sub}</small></span>{m.id==="reviews"&&<em>5</em>}</button>)}</nav><button className="logout" onClick={out}>↪ Đăng xuất</button></aside>{open&&<button className="shade" onClick={()=>setOpen(false)}/>}<section className="main"><div className="top"><button className="hamb" onClick={()=>setOpen(true)}>☰</button><span><small>WORKSPACE</small><b>{cur.label}</b></span><label>⌕ <input placeholder="Tìm kiếm nhanh..."/></label><button>◌</button><div className="user"><i>ĐA</i><span><b>Đức Anh</b><small>{email}</small></span></div></div><div className="content">{active==="overview"?<Overview go={setActive}/>:<Module id={active}/>}</div></section></main>}
+export default function Home(){const[email,setEmail]=useState("");useEffect(()=>setEmail(sessionStorage.getItem("seo-session")||""),[]);return email?<App email={email} out={()=>{sessionStorage.removeItem("seo-session");setEmail("")}}/>:<Login done={e=>{sessionStorage.setItem("seo-session",e);setEmail(e)}}/>}
