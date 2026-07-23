@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = "sqlite:///./app.sqlite3"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,https://ai-seo-clinic-web.vercel.app"
     wordpress_allow_auto_publish: bool = False
     supabase_url: str = ""
     supabase_anon_key: str = ""
