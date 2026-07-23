@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+node_modules/
+.next/
+coverage/
+dist/
+*.sqlite3
+.vercel/
+
+.pnpm-store/
+*.tsbuildinfo
