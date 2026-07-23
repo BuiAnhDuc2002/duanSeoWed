@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = "sqlite:///./app.sqlite3"
+    cors_origins: str = "http://localhost:3000"
     wordpress_allow_auto_publish: bool = False
     supabase_url: str = ""
     supabase_anon_key: str = ""
@@ -18,6 +19,10 @@ class Settings(BaseSettings):
     r2_max_image_bytes: int = 25 * 1024 * 1024
     r2_max_audio_bytes: int = 100 * 1024 * 1024
     r2_max_video_bytes: int = 1024 * 1024 * 1024
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 settings = Settings()
